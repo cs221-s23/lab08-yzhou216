@@ -1,6 +1,6 @@
 PROG = lab08
-OBJS = lab08.o async.o
-TMP = $(PROG) $(OBJS) *.tmp
+OBJS = lab08.o
+TMP = $(PROG) $(OBJS) *.html *.tmp
 
 %.o: %.c
 	gcc -c -g -o $@ $<
