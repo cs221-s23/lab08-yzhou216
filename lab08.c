@@ -10,6 +10,22 @@
 
 #define PORT 8148
 
+#define MAX_RESPONSE_LEN 4096
+#define MAX_BUF 1024
+
+void send_response(int sockfd, const char *status, const char *content_type, const char *body)
+{
+	char response[MAX_RESPONSE_LEN];
+	snprintf(response, sizeof(response),
+		"HTTP/1.1 %s\r\n"
+		"Content-Type: %s\r\n"
+		"Content-Length: %d\r\n"
+		"\r\n"
+		"%s",
+		status, content_type, strlen(body), body);
+	send(sockfd, response, strlen(response), 0);
+}
+
 int main(int argc, char **argv)
 {
 	/* Creating TCP socket */
@@ -63,30 +79,14 @@ int main(int argc, char **argv)
 			socklen_t clilen = sizeof(cliaddr);
 			int connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &clilen);
 
-			char *response;
-
-			char buf[1024];
+			char buf[MAX_BUF];
 			memset(buf, 0, sizeof(buf));
 			read(connfd, buf, sizeof(buf));
-			if (strstr(buf, "GET /wrong")) {
-				response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nLength: 39 [text/plain]\n\n"
-					   "<!DOCTYPE html>\n"
-					   "<html>\n"
-					   "  <body>\n"
-					   "    Not found\n"
-					   "  </body>\n"
-					   "</html>\n";
-			} else {
-				response = "HTTP/1.1 200 OK\nContent-Type: text/html\nLength: 59 [text/plain]\nSaving to: ‘index.html’\n\n"
-					   "<!DOCTYPE html>\n"
-					   "<html>\n"
-					   "  <body>\n"
-					   "    Hello CS 221\n"
-					   "  </body>\n"
-					   "</html>\n";
-			}
+			if (strstr(buf, "GET /wrong"))
+				send_response(connfd, "404 Not Found", "text/html", "<!DOCTYPE html>\n<html>\n  <body>\n    Not found\n  </body>\n</html>\n");
+			else
+				send_response(connfd, "200 OK", "text/html", "<!DOCTYPE html>\n<html>\n  <body>\n    Hello CS 221\n  </body>\n</html>\n");
 
-			write(connfd, response, strlen(response));
 			close(connfd);
 		}
 	}
