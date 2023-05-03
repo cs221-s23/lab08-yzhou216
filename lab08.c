@@ -13,8 +13,8 @@
 int main(int argc, char **argv)
 {
 	/* Creating TCP socket */
-	int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (listenfd < 0) {
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd < 0) {
 		perror("Failed to create socket");
 		exit(-1);
 	}
@@ -27,19 +27,19 @@ int main(int argc, char **argv)
 
 
 	int optval = 1;
-	if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
 		perror("setsockopt failed...\n");
 		exit(-1);
 	}
 
 	/* Binding socket to the port */
-	if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) {
+	if (bind(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr))) {
 		perror("Failed to bind socket");
 		exit(-1);
 	}
 
 	/* Listening for TCP connections */
-	if (listen(listenfd, 10) != 0) {
+	if (listen(sockfd, 10) != 0) {
 		perror("Failed to listen for connections");
 		exit(-1);
 	}
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 
 	/* Receiving & handling the message */
 	struct pollfd fds[1];
-	fds[0].fd = listenfd;
+	fds[0].fd = sockfd;
 	fds[0].events = POLLIN;
 
 	while (true) {
@@ -61,14 +61,14 @@ int main(int argc, char **argv)
 		if (fds[0].revents & POLLIN) {
 			struct sockaddr_in cliaddr;
 			socklen_t clilen = sizeof(cliaddr);
-			int connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+			int connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &clilen);
 
 			char *response;
 
 			char buf[1024];
 			memset(buf, 0, sizeof(buf));
 			read(connfd, buf, sizeof(buf));
-			if (strstr(buf, "GET /wrong") != NULL) {
+			if (strstr(buf, "GET /wrong")) {
 				response = "HTTP/1.1 404 Not Found\nContent-Type: text/html\nLength: 39 [text/plain]\n\n"
 					   "<!DOCTYPE html>\n"
 					   "<html>\n"
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	close(listenfd);
+	close(sockfd);
 
 	return 0;
 }
